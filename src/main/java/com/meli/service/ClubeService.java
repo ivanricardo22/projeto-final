@@ -35,7 +35,7 @@ public class ClubeService {
 
     public Optional<ClubeDTO> getClube(Integer id) {
         Optional<Clube> clube = clubeRepository.findById(id);
-        //return clube.map(ClubeDTO::new).orElseGet(ClubeDTO::new);
+
 
         if (clube.isPresent()) {
             return Optional.of(new ClubeDTO(clube.get()));
