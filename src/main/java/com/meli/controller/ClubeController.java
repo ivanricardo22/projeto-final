@@ -1,5 +1,7 @@
 package com.meli.controller;
 
+import com.meli.ConflitosDeNomesDeClubes;
+import com.meli.ValidacaoException;
 import com.meli.dto.ClubeDTO;
 import com.meli.dto.ClubeDTORequest;
 import com.meli.service.ClubeService;
@@ -42,9 +44,18 @@ public class ClubeController {
 
 
     @PostMapping()
-    public ResponseEntity<ClubeDTO> cadastrarClube(@RequestBody ClubeDTORequest clubeDTORequest) {
+    public ResponseEntity<?> cadastrarClube(@RequestBody ClubeDTORequest clubeDTORequest) {
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(clubeService.cadastrarClube(clubeDTORequest));
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(clubeService.cadastrarClube(clubeDTORequest));
+
+        } catch (ValidacaoException  e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (ConflitosDeNomesDeClubes e ) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+
+
     }
 
 

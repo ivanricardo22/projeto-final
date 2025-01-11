@@ -28,6 +28,8 @@ public class Clube {
     private  boolean ativo;
 
 
+
+
     public Clube(ClubeDTORequest clubeDTORequest) {
         this.nome = clubeDTORequest.getNome();
         this.siglaDeEstado = clubeDTORequest.getSiglaDeEstado();
