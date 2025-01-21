@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ClubeDTO {
+public class ClubeResponseDTO {
 
     private Integer id;
     private String nome;
@@ -20,7 +20,7 @@ public class ClubeDTO {
     private LocalDate dataDeCriacao;
     private  boolean ativo;
 
-    public ClubeDTO(Clube clube) {
+    public ClubeResponseDTO(Clube clube) {
         this.id = clube.getId();
         this.nome = clube.getNome();
         this.siglaDeEstado = clube.getSiglaDeEstado();

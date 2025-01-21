@@ -1,11 +1,16 @@
 package com.meli.service;
 
-import com.meli.ConflitosDeNomesDeClubes;
-import com.meli.ValidacaoException;
-import com.meli.dto.ClubeDTO;
-import com.meli.dto.ClubeDTORequest;
+import com.meli.dto.ClubeRequestDTO;
+import com.meli.dto.ClubeResponseDTO;
+import com.meli.enums.SiglasEstadoBrasil;
+import com.meli.exeption.ClubeInexistenteException;
+import com.meli.exeption.ConflitosDeDataException;
+import com.meli.exeption.ConflitosDeNomesDeClubes;
+import com.meli.exeption.ValidacaoException;
 import com.meli.model.Clube;
+import com.meli.model.Partida;
 import com.meli.repository.ClubeRepository;
+import com.meli.repository.PartidaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
@@ -19,82 +24,104 @@ import java.util.Optional;
 public class ClubeService {
 
     private final ClubeRepository clubeRepository;
+    private final PartidaRepository partidaRepository;
+    private static final LocalDate dataAtual = LocalDate.now();
 
     @Autowired
-    public ClubeService(ClubeRepository clubeRepository) {
+    public ClubeService(ClubeRepository clubeRepository, PartidaRepository partidaRepository) {
 
         this.clubeRepository = clubeRepository;
+        this.partidaRepository = partidaRepository;
     }
 
-    private final String[] SIGLAS_ESTADO_BRASIL = {"AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT",
-            "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"};
-
-
-    public List<ClubeDTO> getClubes() {
+    public List<ClubeResponseDTO> getClubes() {
         List<Clube> clubes = clubeRepository.findAll();
-        List<ClubeDTO> clubesDTO = new ArrayList<>();
-        for (Clube clube : clubes) {
-            ClubeDTO clubeDTO = new ClubeDTO(clube);
-            clubesDTO.add(clubeDTO);
+        List<ClubeResponseDTO> listclubesDTO = new ArrayList<>();
+
+        if (clubes.isEmpty()) {
+            return listclubesDTO;
         }
-        return clubesDTO;
+        for (Clube clube : clubes) {
+            ClubeResponseDTO clubeDTO = new ClubeResponseDTO(clube);
+            listclubesDTO.add(clubeDTO);
+        }
+        return listclubesDTO;
     }
 
-    public Optional<ClubeDTO> getClube(Integer id) {
+    public ClubeResponseDTO getClubeId(Integer id) {
         Optional<Clube> clube = clubeRepository.findById(id);
         if (clube.isPresent()) {
-            return Optional.of(new ClubeDTO(clube.get()));
+            return new ClubeResponseDTO(clube.get());
         } else {
-            return Optional.of(new ClubeDTO());
+            throw new ConflitosDeDataException("Sem resultado");
         }
-
     }
 
+    public ClubeResponseDTO cadastrarClube(ClubeRequestDTO clubeRequestDTO) {
 
-    public ClubeDTO cadastrarClube(ClubeDTORequest clubeDTORequest) {
+        validacaoDadosClube(clubeRequestDTO);
+        Clube clube = new Clube(clubeRequestDTO);
+        Clube novo = clubeRepository.save(clube);
+        return new ClubeResponseDTO(novo);
+    }
 
-        LocalDate dataDeCadastro = clubeDTORequest.getDataDeCriacao();
-        LocalDate dataAtual =LocalDate.now();
-
-
-        if (clubeDTORequest.getNome() != null && !clubeDTORequest.getNome().isEmpty() &&
-                clubeDTORequest.getNome().length() > 1 &&
-                clubeDTORequest.getDataDeCriacao() != null && !dataDeCadastro.isAfter(dataAtual) &&
-                clubeDTORequest.getSiglaDeEstado() != null && clubeDTORequest.getSiglaDeEstado().length() > 1 &&
-                clubeDTORequest.isAtivo() ) {
+    private void validacaoDadosClube(ClubeRequestDTO clubeRequestDTO) {
+        LocalDate dataDeCadastro = clubeRequestDTO.getDataDeCriacao();
+        if (clubeRequestDTO.getNome() != null && !clubeRequestDTO.getNome().isEmpty() &&
+                clubeRequestDTO.getNome().length() > 1 &&
+                clubeRequestDTO.getDataDeCriacao() != null && !dataDeCadastro.isAfter(dataAtual) &&
+                clubeRequestDTO.getSiglaDeEstado() != null && clubeRequestDTO.getSiglaDeEstado().length() > 1 &&
+                clubeRequestDTO.isAtivo()) {
 
             for (Clube clube : clubeRepository.findAll()) {
-                if (clubeDTORequest.getNome().equals(clube.getNome())) {
-                    throw new ConflitosDeNomesDeClubes(" Já existe país cadastrados com este nome " + clube.getNome());
+                if (clubeRequestDTO.getNome().equals(clube.getNome())) {
+                    throw new ConflitosDeNomesDeClubes(" Já existe país cadastrados com este nome "
+                            + clube.getNome());
                 }
             }
-
-            for (String sigla : SIGLAS_ESTADO_BRASIL) {
-                if (!Objects.equals(clubeDTORequest.getSiglaDeEstado(), sigla)) {
+            for (SiglasEstadoBrasil sigla : SiglasEstadoBrasil.values()) {
+                if (!Objects.equals(clubeRequestDTO.getSiglaDeEstado(), sigla)) {
                     throw new ValidacaoException("País incorreto ");
                 }
             }
-
-            Clube clube = new Clube(clubeDTORequest);
-            Clube novo = clubeRepository.save(clube);
-
-            ClubeDTO clubeDTO = new ClubeDTO();
-
-            clubeDTO.setId(novo.getId());
-            clubeDTO.setNome(novo.getNome());
-            clubeDTO.setDataDeCriacao(novo.getDataDeCriacao());
-            clubeDTO.setSiglaDeEstado(novo.getSiglaDeEstado());
-            clubeDTO.setAtivo(novo.isAtivo());
-
-            return clubeDTO;
-
         }
-
-
-        throw new ValidacaoException("Preencha todos os dados!");
     }
 
+    public Optional<ClubeResponseDTO> alterarClube(Integer id, ClubeRequestDTO clubeRequestDTO) {
+        LocalDate dataDeCadastro = clubeRequestDTO.getDataDeCriacao();
+        if (clubeRequestDTO.getNome().length() < 2 || dataDeCadastro.isAfter(dataAtual)) {
+            throw new ValidacaoException("Dados invalidos");
+        }
+        for (SiglasEstadoBrasil sigla : SiglasEstadoBrasil.values()) {
+            if (!Objects.equals(clubeRequestDTO.getSiglaDeEstado(), sigla)) {
+                throw new ValidacaoException("Dados invalidos");
+            }
+        }
+        Optional<Partida> partida = partidaRepository.findById(id);
 
+        if (partida.isPresent() && clubeRequestDTO.getDataDeCriacao().isAfter(partida.get().getDataPartida())) {
+            throw new ConflitosDeDataException("A alteração da data de criação não pode ser após a partida já marcada");
+        }
+        Optional<Clube> clube = clubeRepository.findById(id);
+        if (clube.isPresent() && clube.get().getNome().equals(clubeRequestDTO.getNome()) && clube.get().getSiglaDeEstado().equals(clubeRequestDTO.getSiglaDeEstado())) {
+            throw new ConflitosDeDataException("Nome do clube já existe para o mesmo estado");
+        }
+        Clube clubeAtualizado = new Clube(clubeRequestDTO);
+        clubeRepository.save(clubeAtualizado);
+        return Optional.of(new ClubeResponseDTO(clubeAtualizado));
+    }
 
+    public void  excluirClube(Integer id) {
 
+        Optional<Clube> clube = clubeRepository.findById(id);
+        if (clube.isPresent()) {
+            Clube clubeParaInativar = clube.get();
+            clubeParaInativar.setAtivo(false);
+            clubeRepository.save(clubeParaInativar);
+
+        } else {
+            throw new ClubeInexistenteException("Clube não encontrado");
+        }
+    }
 }
+

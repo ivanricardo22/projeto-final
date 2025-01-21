@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Setter
 @Getter
-public class ClubeDTORequest {
+public class ClubeRequestDTO {
 
     private String nome;
     private String siglaDeEstado;

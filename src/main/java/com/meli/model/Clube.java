@@ -1,6 +1,6 @@
 package com.meli.model;
 
-import com.meli.dto.ClubeDTORequest;
+import com.meli.dto.ClubeRequestDTO;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,12 +28,12 @@ public class Clube {
     private  boolean ativo;
 
 
-
-
-    public Clube(ClubeDTORequest clubeDTORequest) {
-        this.nome = clubeDTORequest.getNome();
-        this.siglaDeEstado = clubeDTORequest.getSiglaDeEstado();
-        this.dataDeCriacao = clubeDTORequest.getDataDeCriacao();
-        this.ativo = clubeDTORequest.isAtivo();
+    public Clube(ClubeRequestDTO clubeRequestDTO) {
+        this.nome = clubeRequestDTO.getNome();
+        this.siglaDeEstado = clubeRequestDTO.getSiglaDeEstado();
+        this.dataDeCriacao = clubeRequestDTO.getDataDeCriacao();
+        this.ativo = clubeRequestDTO.isAtivo();
     }
+
+
 }
